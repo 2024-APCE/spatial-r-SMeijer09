@@ -147,79 +147,97 @@ elevation_map <- ggplot() +
   ggspatial::annotation_scale(location="bl", width_hint = 0.2) 
 # first graph that is needed in your document elevation_map
 elevation_map
-                                                                                                                            # plot the rainfall map but make the colours from light blue to dark blue rainfall_map <- ggplot() +
-                                                                                                                                    tidyterra::geom_spatraster(data=rainfall) + scale_fill_gradientn(colours=rev(viridis::viridis(10)),
-                                                                                                                                                                                                     limits=c(1000, 3000), # can be found in QGIS
-                                                                                                                                                                                                     oob=squish, # everything that is outside the scale will not be commited name="mm") +
-                                                                                                                                                                                                     tidyterra::geom_spatvector(data=protected_areas, fill=NA, linewidth=0.5) +
-                                                                                                                                                                                                       
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=studyarea, fill=NA, linewidth=0.5, col="red") +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=lakes, fill="royalblue3", linewidth=0.5) +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=rivers, col="deepskyblue2", linewidth=0.5) +
-                                                                                                                                                                                                       labs(title = "Rainfall") +
-                                                                                                                                                                                                       coord_sf(xlimits, ylimits, datum = sf::st_crs(32736)) + theme(axis.text = element_blank(),
-                                                                                                                                                                                                                                                                     axis.ticks= element_blank()) +
-                                                                                                                                                                                                       ggspatial::annotation_scale(location="bl", width_hint = 0.2) # first graph that is needed in your
-                                                                                                                                                                                                     document rainfall_map
-                                                                                                                                                                                                     # combine the different maps into one composite map using the patchwork library # and save it to a high resolution png
-                                                                                                                                                                                                     woody_map + elevation_map + rainfall_map
-                                                                                                                                                                                                     all_maps<-woody_map +elevation_map + rainfall_map patchwork::plot_layout(ncol=1)
-                                                                                                                                                                                                     all_maps ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstratin g/figures/all_maps.png", width = 18, height = 18, units = "cm",dpi=300)
+                                                                                                                 # plot the rainfall map but make the colours from light blue to dark blue 
+rainfall_map <- ggplot() + tidyterra::geom_spatraster(data=rainfall) + scale_fill_gradientn(colours=rev(viridis::viridis(10)), limits=c(1000, 3000), # can be found in QGIS
+  oob=squish, # everything that is outside the scale will not be commited 
+  name="mm") + 
+  tidyterra::geom_spatvector(data=protected_areas, fill=NA, linewidth=0.5) + 
+  tidyterra::geom_spatvector(data=studyarea, fill=NA, linewidth=0.5, col="red") +
+  tidyterra::geom_spatvector(data=lakes, fill="royalblue3", linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers, col="deepskyblue2", linewidth=0.5) +
+  labs(title = "Rainfall") +coord_sf(xlimits, ylimits, datum = sf::st_crs(32736)) + 
+  theme(axis.text = element_blank(),axis.ticks= element_blank()) + 
+  ggspatial::annotation_scale(location="bl", width_hint = 0.2) # first graph that is needed in your document rainfall_map combine the different maps into one composite map using the patchwork library # and save it to a high resolution png
+rainfall_map
+woody_map + elevation_map + rainfall_map
+all_maps<-woody_map +elevation_map + rainfall_map patchwork::plot_layout(ncol=1)
+all_maps 
+ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstrating/figures/all_maps.png", width = 18, height = 18, units = "cm",dpi=300)
                                                                                                                                                                                                      ############################ ### explore your study area
-                                                                                                                                                                                                     # For the study area, I have used a CRS of EPSG:4326, so I will reproject the woodybiom raster to match the studyarea's CRS
-                                                                                                                                                                                                     # Reproject woodybiom to match studyarea's CRS (EPSG:4326)
-                                                                                                                                                                                                     woodybiom_tf <- terra::project(woodybiom, "EPSG:4326")
-                                                                                                                                                                                                     elevation_tf <- terra::project(elevation, "EPSG:4326")
-                                                                                                                                                                                                     # Define x and y limits based on the extent of studyarea
-                                                                                                                                                                                                     xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax) ylimits_sa <- c(sf::st_bbox(studyarea)$ymin, sf::st_bbox(studyarea)$ymax)
-                                                                                                                                                                                                     # set the limits of your study area xlimits<-sf::st_bbox(studyarea)[c(1,3)] ylimits<-sf::st_bbox(studyarea)[c(2,4)] saExt<-terra::ext(studyarea)
-                                                                                                                                                                                                     # crop the woody biomass to the extent of the studyarea
-                                                                                                                                                                                                     
-                                                                                                                                                                                                     woodybiom_sa <- terra::crop(woodybiom_tf, studyarea)
-                                                                                                                                                                                                     # plot the woody biomass woody_map_sa<-ggplot() +
-                                                                                                                                                                                                     tidyterra::geom_spatraster(data=woodybiom_sa) + scale_fill_gradientn(colours=rev(terrain.colors(6)),
-                                                                                                                                                                                                                                                                          limits=c(0.77,6.55), oob=squish, name="TBA/ha") +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=protected_areas, fill=NA,linewidth=0.5) +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=rivers, col="blue",linewidth=0.5) +
-                                                                                                                                                                                                       labs(title="Woody biomass in the study area") + coord_sf(xlimits,ylimits,expand=F,
-                                                                                                                                                                                                                                                                datum = sf::st_crs(32736)) + theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-                                                                                                                                                                                                       ggspatial::annotation_scale(location="bl",width_hint=0.2) woody_map_sa
-                                                                                                                                                                                                     # make maps also for the other layers that you found # make an elevation map for the study area elevation_sa<-terra::crop(elevation_tf,studyarea)
-                                                                                                                                                                                                     elevation_map_sa<-ggplot() + tidyterra::geom_spatraster(data=elevation_sa) + scale_fill_gradientn(colours=terrain.colors(10),
-                                                                                                                                                                                                                                                                                                       limits=c(500,2100), oob=squish, name="meters") +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=protected_areas, fill=NA,linewidth=0.5) +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data=rivers,
-                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                  col="blue",linewidth=0.5) + labs(title="Elevation in the study area") +
-                                                                                                                                                                                                       coord_sf(xlimits,ylimits,expand=F, datum = sf::st_crs(32736)) +
-                                                                                                                                                                                                       theme(axis.text = element_blank(), axis.ticks = element_blank()) +
-                                                                                                                                                                                                       ggspatial::annotation_scale(location="bl",width_hint=0.2) elevation_map_sa
-                                                                                                                                                                                                     # create 500 random points in our study area # and add them to the previous map
-                                                                                                                                                                                                     # make distance to river map
-                                                                                                                                                                                                     # find dist2 river in files dist2river_sa<-terra::rast("/Users/noorhoogerduijnstrating/Documents/RUG/Master ConsEco/APCE 24/APCE24GIS/apce2024gis/2022_rivers/DistanceToRiver.tif") dist2river_tf <- terra::project(dist2river_sa, "EPSG:4326")
-                                                                                                                                                                                                     # crop the distance to river to the extent of the studyarea dist2river_sa<-terra::crop(dist2river_tf,studyarea)
-                                                                                                                                                                                                     # Check the extents of both the study area and the raster print(terra::ext(studyarea))
-                                                                                                                                                                                                     print(terra::ext(dist2river_sa))
-                                                                                                                                                                                                     map_dist2river_sa<-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/1000) + scale_fill_gradientn(colours = pal_zissou2,
-                                                                                                                                                                                                                                                                                                              limits=c(0,10), oob=squish, name="kilometers") +
-                                                                                                                                                                                                       tidyterra::geom_spatvector(data = protected_areas,fill=NA, linewidth=0.7) + tidyterra::geom_spatvector(data=rivers,linewidth=0.3,col="blue") +
-                                                                                                                                                                                                       labs(title = "Distance to rivers") +
-                                                                                                                                                                                                       coord_sf(xlim=xlimits,ylim=ylimits, # set bounding box
-                                                                                                                                                                                                                expand=F,
-                                                                                                                                                                                                                datum=sf::st_crs(32736)) + # keep in original projected coordinates theme(axis.text = element_blank(),
-                                                                                                                                                                                                       axis.ticks = element_blank()) + # Remove axis coordinate labels ggspatial::annotation_scale( # Add a scale bar
-                                                                                                                                      
-                                                                                                                                      location = "bl", # Position: bottom left
-                                                                                                                                    width_hint = 0.2) map_dist2river_sa
-                                                                  # Adjust width of the scale bar +
-                                                                  ### put all maps together
-                                                                  all_maps_sa<-woody_map_sa +map_dist2river_sa + elevation_map_sa
-                                                                  patchwork::plot_layout(ncol=2)
-                                                                  all_maps_sa ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstratin g/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
-                                                                  # extract your the values of the different raster layers to the points
-                                                                  # make long format
-                                                                  # plot how woody cover is predicted by different variables
+# For the study area, I have used a CRS of EPSG:4326, so I will reproject the woodybiom raster to match the studyarea's CRS
+# Reproject woodybiom to match studyarea's CRS (EPSG:4326)
+woodybiom_tf <- terra::project(woodybiom, "EPSG:4326")
+elevation_tf <- terra::project(elevation, "EPSG:4326")
+
+# Define x and y limits based on the extent of studyarea
+xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax) ylimits_sa <- c(sf::st_bbox(studyarea)$ymin, sf::st_bbox(studyarea)$ymax)
+
+# set the limits of your study area 
+xlimits<-sf::st_bbox(studyarea)[c(1,3)] 
+ylimits<-sf::st_bbox(studyarea)[c(2,4)] 
+saExt<-terra::ext(studyarea)
+
+# crop the woody biomass to the extent of the studyarea
+woodybiom_sa <- terra::crop(woodybiom_tf, studyarea)
+                                                                                                              # plot the woody biomass 
+woody_map_sa<-ggplot() + tidyterra::geom_spatraster(data=woodybiom_sa) + 
+  scale_fill_gradientn(colours=rev(terrain.colors(6)),
+                       limits=c(0.77,6.55), oob=squish, name="TBA/ha") +
+  tidyterra::geom_spatvector(data=protected_areas, fill=NA,linewidth=0.5) +
+  tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
+  tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers, col="blue",linewidth=0.5) +
+  labs(title="Woody biomass in the study area") + 
+  coord_sf(xlimits,ylimits,expand=F, datum = sf::st_crs(32736)) + 
+  theme(axis.text = element_blank(), axis.ticks = element_blank()) + 
+  ggspatial::annotation_scale(location="bl",width_hint=0.2) 
+woody_map_sa
+
+# make maps also for the other layers that you found 
+# make an elevation map for the study area 
+elevation_sa<-terra::crop(elevation_tf,studyarea)
+ elevation_map_sa<-ggplot() + tidyterra::geom_spatraster(data=elevation_sa) + 
+   scale_fill_gradientn(colours=terrain.colors(10),limits=c(500,2100), oob=squish, name="meters") +
+   tidyterra::geom_spatvector(data=protected_areas, fill=NA,linewidth=0.5) +
+   tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
+   tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
+   tidyterra::geom_spatvector(data=rivers,col="blue",linewidth=0.5) + 
+   labs(title="Elevation in the study area") +
+   coord_sf(xlimits,ylimits,expand=F, datum = sf::st_crs(32736)) +
+   theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+   ggspatial::annotation_scale(location="bl",width_hint=0.2) 
+ elevation_map_sa
+
+# create 500 random points in our study area 
+# and add them to the previous map
+ 
+# make distance to river map
+# find dist2 river in files 
+dist2river_sa<-terra::rast("/Users/noorhoogerduijnstrating/Documents/RUG/Master ConsEco/APCE 24/APCE24GIS/apce2024gis/2022_rivers/DistanceToRiver.tif") 
+dist2river_tf <- terra::project(dist2river_sa, "EPSG:4326")
+                                                                                                              # crop the distance to river to the extent of the studyarea 
+dist2river_sa<-terra::crop(dist2river_tf,studyarea)
+# Check the extents of both the study area and the raster 
+print(terra::ext(studyarea))
+print(terra::ext(dist2river_sa))
+
+map_dist2river_sa<-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/1000) + 
+  scale_fill_gradientn(colours = pal_zissou2,limits=c(0,10), oob=squish, name="kilometers") +
+  tidyterra::geom_spatvector(data = protected_areas,fill=NA, linewidth=0.7) + 
+  tidyterra::geom_spatvector(data=rivers,linewidth=0.3,col="blue") +
+  labs(title = "Distance to rivers") +
+  coord_sf(xlim=xlimits,ylim=ylimits, # set bounding box
+           datum=sf::st_crs(32736)) + # keep in original projected coordinates 
+  theme(axis.text = element_blank(),axis.ticks = element_blank()) + # Remove axis coordinate labels 
+  ggspatial::annotation_scale(location = "bl", # Position: bottom left
+                              width_hint = 0.2) # Adjust width of the scale bar
+map_dist2river_sa
+
+### put all maps together
+all_maps_sa<-woody_map_sa +map_dist2river_sa + elevation_map_sa 
+patchwork::plot_layout(ncol=2)
+all_maps_sa ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstratin g/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
+
+# extract your the values of the different raster layers to the points
+# make long format
+# plot how woody cover is predicted by different variables
