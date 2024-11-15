@@ -84,19 +84,23 @@ woodybiom<-terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Vegetati
 hillshade<-terra::rast("./2023_elevation/hillshade_z5.tif") 
 rainfall<-terra::rast("./rainfall/CHIRPS_MeanAnnualRainfall.tif") 
 elevation<-terra::rast("./2023_elevation/elevation_90m.tif")
+
 # inspect the data 
 class(protected_areas) 
 class(elevation) 
 plot(protected_areas) 
 plot(elevation) 
 plot(protected_areas,add=T)
+
 # For the study area, I have used a CRS of EPSG:4326, so I will reproject the woodybiom raster to match the studyarea's CRS
 # Reproject woodybiom to match studyarea's CRS (EPSG:4326)
 woodybiom <- terra::project(woodybiom, "EPSG:4326")
 # Reproject the study area to match the CRS of the woodybiom raster (EPSG:4326)
+studyarea <- terra::project(studyarea, "EPSG:4326")
+protected_areas <- terra::project(protected_areas, "EPSG:4326")
+lakes <- terra::project(lakes, "EPSG:4326")
+rivers <- terra::project(rivers, "EPSG:4326")
 
-
-studyarea_test <- terra::project(studyarea, terra::crs(woodybiom))
 # Check the CRS of the study area after transformation print(terra::crs(studyarea_test))
 # Check the CRS of the woodybiom raster print(terra::crs(woodybiom))
 # Check the CRS of the studyarea vector print(terra::crs(studyarea_test))
@@ -104,28 +108,42 @@ studyarea_test <- terra::project(studyarea, terra::crs(woodybiom))
 xlimits<-c(550000,900000)
 ylimits<-c(9600000,9950000)
 # plot the woody biomass map that you want to predict
-#class:
+
+
+
+
 summary(woodybiom)
 ggplot() +
 tidyterra::geom_spatraster(data=woodybiom) + 
   scale_fill_gradientn(colours=rev(terrain.colors(6)),
                        limits=c(0.77, 6.55), oob=squish,name = "TBA/ha") +
-  tidyterra::geom_spatvector(data=protected_areas, fill=NA, linewidth=0.5)
+  tidyterra::geom_spatvector(data=protected_areas, fill=NA, linewidth=0.5) +
+  tidyterra::geom_spatvector(data=lakes,fill="lightblue",linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers,col="blue",linewidth=0.5) 
 
-ggplot()+ tidyterra::geom_spatraster(data=woodybiom) + 
+woody_map<-ggplot() +
+  tidyterra::geom_spatraster(data=woodybiom) +
   scale_fill_gradientn(colours=rev(terrain.colors(6)),
-                       limits=c(0.77, 6.55), # can be found in QGIS
-                       oob=squish, # everything that is outside the
-                       name="meters") +
-tidyterra::geom_spatvector(data=protected_areas, fill=NA, linewidth=0.5) +
-  tidyterra::geom_spatvector(data=lakes, fill="royalblue3", linewidth=0.5) +
+                       limits=c(0.77,6.55),
+                       oob=squish,
+                       name="TBA/ha") +
+  tidyterra::geom_spatvector(data=protected_areas,
+                             fill=NA,linewidth=0.5) +
+  tidyterra::geom_spatvector(data=studyarea_test,
+                             fill=NA,linewidth=0.5,col="red") +
+  tidyterra::geom_spatvector(data=lakes,
+                             fill="lightblue",linewidth=0.5) +
   tidyterra::geom_spatvector(data=rivers,
-                             col="deepskyblue2", linewidth=0.5) + 
-  tidyterra::geom_spatvector(data=studyarea_test,fill=NA, linewidth=.5, col="red") + 
-  labs(title = "Woody biomass") +
-  coord_sf(xlimits, ylimits, datum = sf::st_crs(32736)) + 
-  theme(axis.text = element_blank(),axis.ticks= element_blank()) +
-  ggspatial::annotation_scale(location="bl", width_hint = 0.2) # first graph that is needed in your document woody_map
+                             col="blue",linewidth=0.5) +
+  labs(title="woody biomass") +
+  coord_sf(xlimits,ylimits,datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location="bl",width_hint=0.2)
+woody_map  
+# first graph that is needed in your document
+
+
 # make an elevation map 
 elevation_map <- ggplot() + 
   tidyterra::geom_spatraster(data=elevation) + 
