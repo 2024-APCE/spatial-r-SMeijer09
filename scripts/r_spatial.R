@@ -20,6 +20,8 @@ install.packages("stringr")
 install.packages("forcats")
 install.packages("sf")
 install.packages("ggspatial")
+install.packages("patchwork")
+install.packages("ggnewscale")
 library(ggspatial)
 library(ggplot2)
 
@@ -46,8 +48,9 @@ library(sf) # for vector data objects
 library(tidyverse) # ggplot, dplyr etc
 library(scales)
 library(viridis) 
-
-
+library(nlme)
+library(patchwork)
+library(ggnewscale)
 # for oob (out of bounds) scale library(ggnewscale) # for using multiple color fill scales in ggplot library(patchwork) # for combining multiple ggplots in one panel plot
 # explore color palettes
 # also see https://www.datanovia.com/en/blog/top-r-color-palettes-to-know-for-great-data-visualization/ # Base R palettes
@@ -68,59 +71,43 @@ barplot(rep(1,10), col = rev(wesanderson::wes_palette("Zissou1", 10, type = "con
 pal_zissou1<-rev(wesanderson::wes_palette("Zissou1", 10, type = "continuous")) 
 pal_zissou2<-wesanderson::wes_palette("Zissou1", 10, type = "continuous")
 pal_zissou1
-# load the vector data for the whole ecosystem 
-sf::st_layers("./2022_protected_areas/protected_areas.gpkg") 
+
+
+# load the vector data for the whole ecosystem
+sf::st_layers("./2022_protected_areas/protected_areas.gpkg")
 protected_areas<-terra::vect("./2022_protected_areas/protected_areas.gpkg",
-layer="protected_areas_2022") # read protected area boundaries) 
-sf::st_layers("./2022_rivers/rivers_hydrosheds.gpkg") 
-rivers<-terra::vect("./2022_rivers/rivers_hydrosheds.gpkg",layer="rivers_hydrosheds") 
+                             layer="protected_areas_2022") # read protected area boundaries)
+sf::st_layers("./2022_rivers/rivers_hydrosheds.gpkg")
+rivers<-terra::vect("./2022_rivers/rivers_hydrosheds.gpkg",
+                    layer="rivers_hydrosheds")
 sf::st_layers("./lakes/lakes.gpkg")
-lakes<-terra::vect("./lakes/lakes.gpkg", layer="lakes")
+lakes<-terra::vect("./lakes/lakes.gpkg",
+                   layer="lakes")  
+
+# read your study area !! check if this matches indeed the name of your area
 sf::st_layers("./studyarea/studyarea.gpkg")
-studyarea<-terra::vect("./studyarea/studyarea.gpkg", # change this to the name of your own studyarea location
+studyarea<-terra::vect("./studyarea/studyarea.gpkg",
                        layer="my_study_area")
-# load the raster data for the whole ecosystem 
-woodybiom<-terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Vegetation/2016_WoodyVegetation/TBA_gam_utm36s.tif") 
-hillshade<-terra::rast("./2023_elevation/hillshade_z5.tif") 
-rainfall<-terra::rast("./rainfall/CHIRPS_MeanAnnualRainfall.tif") 
+
+
+# load the raster data for the whole ecosystem
+woodybiom<-terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Vegetation/2016_WoodyVegetation/TBA_gam_utm36s.tif")
+hillshade<-terra::rast("./2023_elevation/hillshade_z5.tif")
+rainfall<-terra::rast("./rainfall/CHIRPS_MeanAnnualRainfall.tif")
 elevation<-terra::rast("./2023_elevation/elevation_90m.tif")
 
 # inspect the data 
-class(protected_areas) 
-class(elevation) 
-plot(protected_areas) 
-plot(elevation) 
+class(protected_areas)
+class(elevation)
+plot(protected_areas)
+plot(elevation)
 plot(protected_areas,add=T)
 
-# For the study area, I have used a CRS of EPSG:4326, so I will reproject the woodybiom raster to match the studyarea's CRS
-# Reproject woodybiom to match studyarea's CRS (EPSG:4326)
-woodybiom <- terra::project(woodybiom, "EPSG:4326")
-# Reproject the study area to match the CRS of the woodybiom raster (EPSG:4326)
-studyarea <- terra::project(studyarea, "EPSG:4326")
-protected_areas <- terra::project(protected_areas, "EPSG:4326")
-lakes <- terra::project(lakes, "EPSG:4326")
-rivers <- terra::project(rivers, "EPSG:4326")
-
-# Check the CRS of the study area after transformation print(terra::crs(studyarea_test))
-# Check the CRS of the woodybiom raster print(terra::crs(woodybiom))
-# Check the CRS of the studyarea vector print(terra::crs(studyarea_test))
-# set the limits of the map to show (xmin, xmax, ymin, ymax in utm36 coordinates) 
+# set the limits of the map to show (xmin, xmax, ymin, ymax in utm36 coordinates)
 xlimits<-c(550000,900000)
 ylimits<-c(9600000,9950000)
+
 # plot the woody biomass map that you want to predict
-
-
-
-
-summary(woodybiom)
-ggplot() +
-tidyterra::geom_spatraster(data=woodybiom) + 
-  scale_fill_gradientn(colours=rev(terrain.colors(6)),
-                       limits=c(0.77, 6.55), oob=squish,name = "TBA/ha") +
-  tidyterra::geom_spatvector(data=protected_areas, fill=NA, linewidth=0.5) +
-  tidyterra::geom_spatvector(data=lakes,fill="lightblue",linewidth=0.5) +
-  tidyterra::geom_spatvector(data=rivers,col="blue",linewidth=0.5) 
-
 woody_map<-ggplot() +
   tidyterra::geom_spatraster(data=woodybiom) +
   scale_fill_gradientn(colours=rev(terrain.colors(6)),
@@ -129,7 +116,7 @@ woody_map<-ggplot() +
                        name="TBA/ha") +
   tidyterra::geom_spatvector(data=protected_areas,
                              fill=NA,linewidth=0.5) +
-  tidyterra::geom_spatvector(data=studyarea_test,
+  tidyterra::geom_spatvector(data=studyarea,
                              fill=NA,linewidth=0.5,col="red") +
   tidyterra::geom_spatvector(data=lakes,
                              fill="lightblue",linewidth=0.5) +
@@ -140,7 +127,7 @@ woody_map<-ggplot() +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank()) +
   ggspatial::annotation_scale(location="bl",width_hint=0.2)
-woody_map  
+woody_map
 # first graph that is needed in your document
 
 
@@ -174,10 +161,12 @@ rainfall_map <- ggplot() + tidyterra::geom_spatraster(data=rainfall) + scale_fil
   theme(axis.text = element_blank(),axis.ticks= element_blank()) + 
   ggspatial::annotation_scale(location="bl", width_hint = 0.2) # first graph that is needed in your document rainfall_map combine the different maps into one composite map using the patchwork library # and save it to a high resolution png
 rainfall_map
+
 woody_map + elevation_map + rainfall_map
-all_maps<-woody_map +elevation_map + rainfall_map patchwork::plot_layout(ncol=1)
+all_maps<-woody_map +elevation_map + rainfall_map
+patchwork::plot_layout(ncol=1)
 all_maps 
-ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstrating/figures/all_maps.png", width = 18, height = 18, units = "cm",dpi=300)
+ ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps.png", width = 18, height = 18, units = "cm",dpi=300)
                                                                                                                                                                                                      ############################ ### explore your study area
 # For the study area, I have used a CRS of EPSG:4326, so I will reproject the woodybiom raster to match the studyarea's CRS
 # Reproject woodybiom to match studyarea's CRS (EPSG:4326)
@@ -185,7 +174,8 @@ woodybiom_tf <- terra::project(woodybiom, "EPSG:4326")
 elevation_tf <- terra::project(elevation, "EPSG:4326")
 
 # Define x and y limits based on the extent of studyarea
-xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax) ylimits_sa <- c(sf::st_bbox(studyarea)$ymin, sf::st_bbox(studyarea)$ymax)
+xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax) 
+ylimits_sa <- c(sf::st_bbox(studyarea)$ymin, sf::st_bbox(studyarea)$ymax)
 
 # set the limits of your study area 
 xlimits<-sf::st_bbox(studyarea)[c(1,3)] 
@@ -228,7 +218,7 @@ elevation_sa<-terra::crop(elevation_tf,studyarea)
  
 # make distance to river map
 # find dist2 river in files 
-dist2river_sa<-terra::rast("/Users/noorhoogerduijnstrating/Documents/RUG/Master ConsEco/APCE 24/APCE24GIS/apce2024gis/2022_rivers/DistanceToRiver.tif") 
+dist2river_sa<-terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/2022_rivers/DistanceToRiver.tif") 
 dist2river_tf <- terra::project(dist2river_sa, "EPSG:4326")
                                                                                                               # crop the distance to river to the extent of the studyarea 
 dist2river_sa<-terra::crop(dist2river_tf,studyarea)
@@ -251,7 +241,8 @@ map_dist2river_sa
 ### put all maps together
 all_maps_sa<-woody_map_sa +map_dist2river_sa + elevation_map_sa 
 patchwork::plot_layout(ncol=2)
-all_maps_sa ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstratin g/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
+all_maps_sa
+ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
 
 # extract your the values of the different raster layers to the points
 # make long format
