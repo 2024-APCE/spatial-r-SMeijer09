@@ -70,7 +70,7 @@ library(wesanderson)
 barplot(rep(1,10), col = rev(wesanderson::wes_palette("Zissou1", 10, type = "continuous"))) 
 pal_zissou1<-rev(wesanderson::wes_palette("Zissou1", 10, type = "continuous")) 
 pal_zissou2<-wesanderson::wes_palette("Zissou1", 10, type = "continuous")
-pal_zissou1
+pal_zissou2
 
 
 # load the vector data for the whole ecosystem
@@ -213,6 +213,7 @@ elevation_sa<-terra::crop(elevation_tf,studyarea)
    ggspatial::annotation_scale(location="bl",width_hint=0.2) 
  elevation_map_sa
 
+ #check extend
 # create 500 random points in our study area 
 # and add them to the previous map
  
@@ -223,10 +224,10 @@ dist2river_tf <- terra::project(dist2river_sa, "EPSG:4326")
                                                                                                               # crop the distance to river to the extent of the studyarea 
 dist2river_sa<-terra::crop(dist2river_tf,studyarea)
 # Check the extents of both the study area and the raster 
-print(terra::ext(studyarea))
+print(terra::ext(studyarea)) ####### incorrect extend
 print(terra::ext(dist2river_sa))
 
-map_dist2river_sa<-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/1000) + 
+dist2river_map_sa <-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/1000) + 
   scale_fill_gradientn(colours = pal_zissou2,limits=c(0,10), oob=squish, name="kilometers") +
   tidyterra::geom_spatvector(data = protected_areas,fill=NA, linewidth=0.7) + 
   tidyterra::geom_spatvector(data=rivers,linewidth=0.3,col="blue") +
@@ -236,10 +237,10 @@ map_dist2river_sa<-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/1000
   theme(axis.text = element_blank(),axis.ticks = element_blank()) + # Remove axis coordinate labels 
   ggspatial::annotation_scale(location = "bl", # Position: bottom left
                               width_hint = 0.2) # Adjust width of the scale bar
-map_dist2river_sa
+dist2river_map_sa
 
 ### put all maps together
-all_maps_sa<-woody_map_sa +map_dist2river_sa + elevation_map_sa 
+all_maps_sa<-woody_map_sa +dist2river_map_sa + elevation_map_sa 
 patchwork::plot_layout(ncol=2)
 all_maps_sa
 ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
@@ -247,3 +248,132 @@ ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer
 # extract your the values of the different raster layers to the points
 # make long format
 # plot how woody cover is predicted by different variables
+
+#now add rainfall
+rainfall <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/rainfall/CHIRPS_MeanAnnualRainfall.tif")
+rainfall_30m <- rast(terra::ext(rainfall), resolution = 30, crs = crs(rainfall))
+# Resample the raster to 30m resolution
+rainfall_30m <- terra::resample(rainfall, rainfall_30m, method = "bilinear")
+
+#crop
+rainfall_sa <- terra::crop(rainfall_30m, studyarea)
+#check extent
+print(terra::ext(rainfall_sa)) ######### incorrect extend
+print(terra::ext(studyarea))
+
+#plot
+rainfall_map_sa <- ggplot() + tidyterra::geom_spatraster(data = rainfall_sa) + 
+  scale_fill_gradientn(colours = pal_zissou1, limits = c(500, 1500), oob = squish, name = "mm") +
+  tidyterra::geom_spatvector(data = protected_areas, fill = NA, linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
+  tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
+  labs(title = "Rainfall in the study area") +
+  coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
+rainfall_map_sa
+
+#add soil CEC
+soil_CEC <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Soil/Soil_fertility_CEC_5_15cm.tif")
+soil_CEC_tf <- terra::project(soil_CEC, "EPSG:4326")
+#crop
+soil_CEC_sa <- terra::crop(soil_CEC_tf, studyarea)
+#check extend
+print(terra::ext(soil_CEC_sa)) ########## incorrect extend
+print(terra::ext(studyarea))
+
+#plot
+soil_CEC_map_sa <- ggplot() + tidyterra::geom_spatraster(data = soil_CEC_sa) + 
+  scale_fill_gradientn(colours = pal_zissou2, limits = c(100, 350), oob = squish, name = "cmol/kg") +
+  tidyterra::geom_spatvector(data = protected_areas, fill = NA, linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
+  tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
+  labs(title = "Soil CEC in the study area") +
+  coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
+soil_CEC_map_sa
+
+#add number of years burned
+years_burned <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Fire/BurnFreq.tif")
+years_burned_tf <- terra::project(years_burned, "EPSG:4326")
+#crop
+years_burned_sa <- terra::crop(years_burned_tf, studyarea)
+#check extend
+print(terra::ext(years_burned_sa)) ########## incorrect extend
+print(terra::ext(studyarea))
+
+#plot
+years_burned_map_sa <- ggplot() + tidyterra::geom_spatraster(data = years_burned_sa) + 
+  scale_fill_gradientn(colours = pal_zissou2, limits = c(0, 17), oob = squish, name = "years burned") +
+  tidyterra::geom_spatvector(data = protected_areas, fill = NA, linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
+  tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
+  labs(title = "Number of years burned in the study area") +
+  coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
+years_burned_map_sa
+
+#add core protected areas
+r<-terra::rast("./2022_protected_areas/CoreProtectedAreas.tif") 
+CoreProtectedAreas_sa <- r |> #  replace NA by 0
+  is.na() |>
+  terra::ifel(0,r) 
+
+#ADD landform hills
+hills <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/landforms/hills.tif")
+hills_tf <- terra::project(hills, "EPSG:4326")
+#crop
+hills_sa <- terra::crop(hills_tf, studyarea)
+#check extend
+print(terra::ext(hills_sa)) ########## incorrect extend
+print(terra::ext(studyarea))
+
+#plot
+hills_map_sa <- ggplot() +
+  tidyterra::geom_spatraster(data=as.factor(hills_sa)) +
+  scale_fill_manual(values=c("black","orange"),
+                    labels=c("valleys\nand\nplains","hills")) +
+  tidyterra::geom_spatvector(data = protected_areas, fill = NA, linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
+  tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
+  tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
+  labs(title = "Hills in the study area") +
+  coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
+hills_map_sa
+
+#Now add 250 random points to the study area
+set.seed(123)
+rpoints <- terra::spatSample(studyarea, size = 250, 
+                             method = "random")
+# plot the points
+rpoints_map_sa<-ggplot() +
+  tidyterra::geom_spatvector(data=rpoints, size=0.5) +
+  tidyterra::geom_spatvector(data=protected_areas,
+                             fill=NA,linewidth=0.5) +
+  tidyterra::geom_spatvector(data=studyarea,
+                             fill=NA,linewidth=0.5,col="red") +
+  tidyterra::geom_spatvector(data=lakes,
+                             fill="lightblue",linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers,
+                             col="blue",linewidth=0.5) +
+  labs(title="250 random points") +
+  coord_sf(xlimits,ylimits,expand=F,
+           datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location="bl",width_hint=0.2)
+rpoints_map_sa
+
+##### save all maps in 1 figure
+all_maps_sa<-woody_map_sa +dist2river_map_sa + elevation_map_sa + rainfall_map_sa + 
+  soil_CEC_map_sa + years_burned_map_sa + hills_map_sa +rpoints_map_sa +
+  patchwork::plot_layout(ncol=3)
+all_maps_sa
+ggsave("./figures/all_maps_sa.png", width = 297, height = 210, units = "mm",dpi=300)
