@@ -22,10 +22,7 @@ install.packages("sf")
 install.packages("ggspatial")
 library(ggspatial)
 library(ggplot2)
-install.packages("sf", configure.args = c(
-#  "--with-proj-lib=/usr/local/Cellar/proj/9.5.0/share/proj",
-#  "--with-gdal-config=/usr/local/bin/gdal-config"
-#))
+
 
 
 # het installeren van geopackage terra op mac
