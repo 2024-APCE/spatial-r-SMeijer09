@@ -9,11 +9,7 @@ setwd("~/Downloads/APCE2024/apce2024gis")
 #### Extra step for Mac users #### # overige stappen voor mac
 Sys.setenv(PROJ_LIB = "/usr/local/Cellar/proj/9.5.0/share/proj")
 Sys.getenv("PROJ_LIB")
-# --- andere ideeen voor het oplossen van het probleem in mac --- #Sys.setenv(PATH = paste("/opt/homebrew/bin", Sys.getenv("PATH"), sep=":"))
-#system("which pkg-config")
-#Sys.setenv(PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig")
-#system("pkg-config --cflags --libs gdal proj")
-#install.packages("terra", configure.args="--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-proj-include=/opt/homebrew/opt/proj/include --with-proj-lib=/opt/homebrew/opt/proj/lib") #install.packages("tidyterra")
+
 #### Loading libraries and colourpalettes ####
 # load the different libraries
 library(terra) # for working with raster data
@@ -58,10 +54,17 @@ sf::st_layers("./lakes/lakes.gpkg")
 lakes<-terra::vect("./lakes/lakes.gpkg",
                    layer="lakes")  
 
+
 # read your study area !! check if this matches indeed the name of your area
-sf::st_layers("./studyarea/studyarea.gpkg")
-studyarea<-terra::vect("./studyarea/studyarea.gpkg",
-                       layer="my_study_area")
+# LAT LON conversion for mac
+sf::st_layers("/Users/semmeijer/Downloads/APCE2024/apce2024gis/studyarea/my_study_area_latlon.gpkg")
+studyarea<-terra::vect("/Users/semmeijer/Downloads/APCE2024/apce2024gis/studyarea/my_study_area_latlon.gpkg",
+                      layer="my_study_area_latlon")
+
+##### non lat lon conversion for mac
+#sf::st_layers("/Users/semmeijer/Downloads/APCE2024/apce2024gis/studyarea/studyarea.gpkg")
+#studyarea<-terra::vect("/Users/semmeijer/Downloads/APCE2024/apce2024gis/studyarea/studyarea.gpkg",
+#                      layer="my_study_area")
 
 
 # load the raster data for the whole ecosystem
@@ -147,10 +150,6 @@ all_maps
 woodybiom_tf <- terra::project(woodybiom, "EPSG:4326")
 elevation_tf <- terra::project(elevation, "EPSG:4326")
 
-# Define x and y limits based on the extent of studyarea
-xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax) 
-ylimits_sa <- c(sf::st_bbox(studyarea)$ymin, sf::st_bbox(studyarea)$ymax)
-
 # set the limits of your study area 
 xlimits<-sf::st_bbox(studyarea)[c(1,3)] 
 ylimits<-sf::st_bbox(studyarea)[c(2,4)] 
@@ -187,7 +186,7 @@ elevation_sa<-terra::crop(elevation_tf,studyarea)
    ggspatial::annotation_scale(location="bl",width_hint=0.2) 
  elevation_map_sa
 
- #check extend
+ #check extent
 # create 500 random points in our study area 
 # and add them to the previous map
  
@@ -198,15 +197,16 @@ dist2river_tf <- terra::project(dist2river_sa, "EPSG:4326")
                                                                                                               # crop the distance to river to the extent of the studyarea 
 dist2river_sa<-terra::crop(dist2river_tf,studyarea)
 # Check the extents of both the study area and the raster 
-print(terra::ext(studyarea)) ####### incorrect extend
+print(terra::ext(studyarea)) ####### incorrect extent
 print(terra::ext(dist2river_sa))
 
-dist2river_map_sa <-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/1000) + 
-  scale_fill_gradientn(colours = pal_zissou2,limits=c(0,10), oob=squish, name="kilometers") +
+dist2river_map_sa <-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa) + 
+  scale_fill_gradientn(colours = pal_zissou2,limits=c(0,12000), oob=squish, name="meters") +
   tidyterra::geom_spatvector(data = protected_areas,fill=NA, linewidth=0.7) + 
   tidyterra::geom_spatvector(data=rivers,linewidth=0.3,col="blue") +
+  tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
   labs(title = "Distance to rivers") +
-  coord_sf(xlim=xlimits,ylim=ylimits, # set bounding box
+  coord_sf(xlim=xlimits,ylim=ylimits,expand=F, # set bounding box
            datum=sf::st_crs(32736)) + # keep in original projected coordinates 
   theme(axis.text = element_blank(),axis.ticks = element_blank()) + # Remove axis coordinate labels 
   ggspatial::annotation_scale(location = "bl", # Position: bottom left
@@ -227,17 +227,17 @@ rainfall_30m <- terra::project(rainfall_30m, "EPSG:4326")
 rainfall_sa<-terra::crop(rainfall_30m,studyarea)
 
 #check extent
-print(terra::ext(rainfall_30m)) ######### incorrect extend
+print(terra::ext(rainfall_30m)) ######### incorrect extent
 print(terra::ext(studyarea))
 
 #plot
 rainfall_map_sa <- ggplot() + tidyterra::geom_spatraster(data = rainfall_sa) + 
-  scale_fill_gradientn(colours = pal_zissou1, limits = c(500, 1500), oob = squish, name = "mm") +
+  scale_fill_gradientn(colours = pal_zissou1, limits = c(650, 1400), oob = squish, name = "mm") +
   tidyterra::geom_spatvector(data = protected_areas, fill = NA, linewidth = 0.5) +
   tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
   tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
   tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
-  labs(title = "Rainfall in the study area") +
+  labs(title = "Rainfall") +
   coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
   theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
@@ -248,10 +248,10 @@ soil_CEC <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Soil/So
 soil_CEC_tf <- terra::project(soil_CEC, crs(studyarea))
 #crop
 soil_CEC_sa <- terra::crop(soil_CEC_tf, studyarea)
-#check extend
+#check extent
 print(terra::ext(soil_CEC))
 print(terra::ext(soil_CEC_tf))
-print(terra::ext(soil_CEC_sa)) ########## incorrect extend
+print(terra::ext(soil_CEC_sa)) ########## incorrect extent
 print(terra::ext(studyarea))
 
 #plot
@@ -261,7 +261,7 @@ soil_CEC_map_sa <- ggplot() + tidyterra::geom_spatraster(data = soil_CEC_sa) +
   tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
   tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
   tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
-  labs(title = "Soil CEC in the study area") +
+  labs(title = "Soil CEC") +
   coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
   theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
@@ -272,8 +272,8 @@ years_burned <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Fir
 years_burned_tf <- terra::project(years_burned, "EPSG:4326")
 #crop
 years_burned_sa <- terra::crop(years_burned_tf, studyarea)
-#check extend
-print(terra::ext(years_burned_sa)) ########## incorrect extend
+#check extent
+print(terra::ext(years_burned_sa)) ########## incorrect extent
 print(terra::ext(studyarea))
 
 #plot
@@ -283,7 +283,7 @@ years_burned_map_sa <- ggplot() + tidyterra::geom_spatraster(data = years_burned
   tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
   tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
   tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
-  labs(title = "Number of years burned in the study area") +
+  labs(title = "Number of years burned") +
   coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
   theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
@@ -298,7 +298,7 @@ CoreProtectedAreas <- r |> #  replace NA by 0
 CoreProtectedAreas_tf <- terra::project(CoreProtectedAreas, "EPSG:4326")
 CoreProtectedAreas_sa <- terra::crop(CoreProtectedAreas_tf, studyarea)
 #check extent
-print(terra::ext(CoreProtectedAreas_sa)) ########## incorrect extend
+print(terra::ext(CoreProtectedAreas_sa)) ########## incorrect extent
 print(terra::ext(studyarea))
 
 #plot
@@ -327,8 +327,8 @@ hills <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/landforms/
 hills_tf <- terra::project(hills, "EPSG:4326")
 #crop
 hills_sa <- terra::crop(hills_tf, studyarea)
-#check extend
-print(terra::ext(hills_sa)) ########## incorrect extend
+#check extent
+print(terra::ext(hills_sa)) ########## incorrect extent
 print(terra::ext(studyarea))
 
 #plot
@@ -340,7 +340,7 @@ hills_map_sa <- ggplot() +
   tidyterra::geom_spatvector(data = studyarea, fill = NA, linewidth = 0.5, col = "red") +
   tidyterra::geom_spatvector(data = lakes, fill = "royalblue3", linewidth = 0.5) +
   tidyterra::geom_spatvector(data = rivers, col = "deepskyblue2", linewidth = 0.5) +
-  labs(title = "Hills in the study area") +
+  labs(title = "Landform") +
   coord_sf(xlimits, ylimits, expand = F, datum = sf::st_crs(32736)) +
   theme(axis.text = element_blank(), axis.ticks = element_blank()) +
   ggspatial::annotation_scale(location = "bl", width_hint = 0.2)
@@ -375,3 +375,120 @@ all_maps_sa<-woody_map_sa +dist2river_map_sa + elevation_map_sa + CoreProtectedA
   patchwork::plot_layout(ncol=3)
 all_maps_sa
 ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps_sa.png", width = 297, height = 210, units = "mm",dpi=300)
+
+
+#########################
+#########################
+#########################
+# extract your the values of the different raster layers to the points
+# Extract raster values at the points
+woody_points <- terra::extract(woodybiom_sa, rpoints) |> 
+  as_tibble() |>
+  dplyr::rename(woody=TBA_gam_utm36s)
+woody_points
+dist2river_points <- terra::extract(dist2river_sa, rpoints) |> 
+  as_tibble() |>
+  dplyr::rename(dist2river=distance)
+dist2river_points
+elevation_points <- terra::extract(elevation_sa, rpoints) |> 
+  as_tibble() 
+elevation_points
+CorProtAr_points <- terra::extract(CoreProtectedAreas_sa, rpoints) |> 
+  as_tibble() |>
+  dplyr::rename(CorProtAr=CoreProtectedAreas)
+CorProtAr_points
+rainfall_points <- terra::extract(rainfall_sa, rpoints) |> 
+  as_tibble() |> 
+  dplyr::rename(rainfall=CHIRPS_MeanAnnualRainfall)
+rainfall_points
+cec_points <- terra::extract(soil_CEC_sa, rpoints) |> 
+  as_tibble() |>
+  dplyr::rename(cec='cec_5-15cm_mean')
+cec_points
+burnfreq_points <- terra::extract(years_burned_sa, rpoints) |> 
+  as_tibble() |>
+  dplyr::rename(burnfreq=burned_sum)
+burnfreq_points
+landform_points <- terra::extract(hills_sa, rpoints) |> 
+  as_tibble() |>
+  dplyr::rename(hills=remapped)
+landform_points
+
+
+
+
+# merge the different variable into a single table
+# use woody biomass as the last variable
+pointdata<-cbind(dist2river_points[,2],elevation_points[,2],
+                 CorProtAr_points[,2],rainfall_points[,2], 
+                 cec_points[,2],burnfreq_points[,2],
+                 landform_points[,2],woody_points[,2]) |>
+  as_tibble()
+pointdata
+sum(is.na(pointdata))
+pointdata <- na.omit(pointdata)
+
+# plot how woody cover is predicted by different variables
+# Create a correlation panel plot
+library(psych)
+psych::pairs.panels(
+  pointdata ,
+  method = "pearson",     # Correlation method (use "spearman" for rank correlation)
+  hist.col = "lightblue",  # Color for histograms
+  density = TRUE,          # Add density plots
+  ellipses = F,         # Add correlation ellipses
+  lm = TRUE,                # Add linear regression lines
+  stars=T
+)
+
+# make long format
+names(pointdata)
+pointdata_long<-pivot_longer(data=pointdata,
+                             cols = dist2river:hills, # all except woody
+                             names_to ="pred_var",
+                             values_to = "pred_val")
+pointdata_long
+
+# panel plot
+ggplot(data=pointdata_long, mapping=aes(x=pred_val,y=woody,group=pred_var)) +
+  geom_point() +
+  geom_smooth() +
+  ylim(0,40) +
+  facet_wrap(~pred_var,scales="free") 
+
+# do a pca
+# Load the vegan package
+library(vegan)
+# Perform PCA using the rda() function
+pca_result <- vegan::rda(pointdata,
+                         scale = TRUE)
+# Display a summary of the PCA
+summary(pca_result)
+
+# Plot the PCA
+plot(pca_result, scaling = 2, type="n", xlab="",ylab="")  # Use scaling = 1 for distance preservation, scaling = 2 for correlations
+# Add points for samples
+points(pca_result, display = "sites", pch=pointdata$CorProtAr+1, col = pointdata$hills+1, bg = "blue", cex = 1)
+# Add arrows for variables
+arrows(0, 0, scores(pca_result, display = "species")[, 1], scores(pca_result, display = "species")[, 2], 
+       length = 0.1, col = "red")
+# Label the variables with arrows
+text(scores(pca_result, display = "species")[, 1], scores(pca_result, display = "species")[, 2], 
+     labels = colnames(pointdata), col = "red", cex = 0.8, pos = 4)
+# Add axis labels and a title
+title(main = "PCA Biplot")
+xlabel <- paste("PC1 (", round(pca_result$CA$eig[1] / sum(pca_result$CA$eig) * 100, 1), "%)", sep = "")
+ylabel <- paste("PC2 (", round(pca_result$CA$eig[2] / sum(pca_result$CA$eig) * 100, 1), "%)", sep = "")
+title(xlab=xlabel)
+title(ylab=ylabel)
+# add contours for woody cover
+
+vegan::ordisurf(pca_result, pointdata$woody, add = TRUE, col = "green4")
+
+
+
+
+
+
+
+
