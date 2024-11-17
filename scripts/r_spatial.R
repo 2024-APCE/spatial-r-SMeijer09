@@ -239,12 +239,6 @@ dist2river_map_sa <-ggplot() + tidyterra::geom_spatraster(data=dist2river_sa/100
                               width_hint = 0.2) # Adjust width of the scale bar
 dist2river_map_sa
 
-### put all maps together
-all_maps_sa<-woody_map_sa +dist2river_map_sa + elevation_map_sa 
-patchwork::plot_layout(ncol=2)
-all_maps_sa
-ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
-
 # extract your the values of the different raster layers to the points
 # make long format
 # plot how woody cover is predicted by different variables
@@ -253,12 +247,13 @@ ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer
 rainfall <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/rainfall/CHIRPS_MeanAnnualRainfall.tif")
 rainfall_30m <- rast(terra::ext(rainfall), resolution = 30, crs = crs(rainfall))
 # Resample the raster to 30m resolution
-rainfall_30m <- terra::resample(rainfall, rainfall_30m, method = "bilinear")
+rainfall_30m <- terra::resample(rainfall, rainfall_30m, method = "bilinear")  
+rainfall_30m <- terra::project(rainfall_30m, "EPSG:4326")
 
-#crop
-rainfall_sa <- terra::crop(rainfall_30m, studyarea)
+rainfall_sa<-terra::crop(rainfall_30m,studyarea)
+
 #check extent
-print(terra::ext(rainfall_sa)) ######### incorrect extend
+print(terra::ext(rainfall_30m)) ######### incorrect extend
 print(terra::ext(studyarea))
 
 #plot
@@ -319,10 +314,37 @@ years_burned_map_sa <- ggplot() + tidyterra::geom_spatraster(data = years_burned
 years_burned_map_sa
 
 #add core protected areas
-r<-terra::rast("./2022_protected_areas/CoreProtectedAreas.tif") 
-CoreProtectedAreas_sa <- r |> #  replace NA by 0
+r<-terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/2022_protected_areas/CoreProtectedAreas.tif") 
+CoreProtectedAreas <- r |> #  replace NA by 0
   is.na() |>
   terra::ifel(0,r) 
+#project then crop
+CoreProtectedAreas_tf <- terra::project(CoreProtectedAreas, "EPSG:4326")
+CoreProtectedAreas_sa <- terra::crop(CoreProtectedAreas_tf, studyarea)
+#check extent
+print(terra::ext(CoreProtectedAreas_sa)) ########## incorrect extend
+print(terra::ext(studyarea))
+
+#plot
+CoreProtectedAreas_map_sa<-ggplot() +
+  tidyterra::geom_spatraster(data=as.factor(CoreProtectedAreas_sa)) +
+  scale_fill_manual(values=c("grey","lightgreen"),
+                    labels=c("no","yes")) +
+  tidyterra::geom_spatvector(data=protected_areas,
+                             fill=NA,linewidth=0.5) +
+  tidyterra::geom_spatvector(data=studyarea,
+                             fill=NA,linewidth=0.5,col="red") +
+  tidyterra::geom_spatvector(data=lakes,
+                             fill="lightblue",linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers,
+                             col="blue",linewidth=0.5) +
+  labs(title="Core protected areas") +
+  coord_sf(xlimits,ylimits,expand=F,
+           datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location="bl",width_hint=0.2)
+CoreProtectedAreas_map_sa
 
 #ADD landform hills
 hills <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/landforms/hills.tif")
@@ -372,8 +394,8 @@ rpoints_map_sa<-ggplot() +
 rpoints_map_sa
 
 ##### save all maps in 1 figure
-all_maps_sa<-woody_map_sa +dist2river_map_sa + elevation_map_sa + rainfall_map_sa + 
-  soil_CEC_map_sa + years_burned_map_sa + hills_map_sa +rpoints_map_sa +
+all_maps_sa<-woody_map_sa +dist2river_map_sa + elevation_map_sa + CoreProtectedAreas_map_sa + rainfall_map_sa + 
+  soil_CEC_map_sa + years_burned_map_sa + hills_map_sa +rpoints_map_sa + 
   patchwork::plot_layout(ncol=3)
 all_maps_sa
-ggsave("./figures/all_maps_sa.png", width = 297, height = 210, units = "mm",dpi=300)
+ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps_sa.png", width = 297, height = 210, units = "mm",dpi=300)
