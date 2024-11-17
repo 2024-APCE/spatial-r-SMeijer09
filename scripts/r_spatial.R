@@ -4,32 +4,6 @@ rm(list = ls())
 setwd("~/Downloads/APCE2024/apce2024gis") 
 
 #### Restoring packages etc. #### # restore the libraries of the project renv::restore()
-install.packages("nlme") 
-install.packages("renv") 
-install.packages("tidyverse") 
-install.packages("viridis") 
-install.packages("wesanderson") 
-install.packages("tidyterra")
-install.packages("ggplot2")
-install.packages("dplyr")
-install.packages("tidyr")
-install.packages("readr")
-install.packages("purrr")
-install.packages("tibble")
-install.packages("stringr")
-install.packages("forcats")
-install.packages("sf")
-install.packages("ggspatial")
-install.packages("patchwork")
-install.packages("ggnewscale")
-library(ggspatial)
-library(ggplot2)
-
-
-
-# het installeren van geopackage terra op mac
-#install.packages("terra", configure.args = "--with-gdal-config=/usr/local/bin/gdal-config")
-
 
 
 #### Extra step for Mac users #### # overige stappen voor mac
@@ -271,10 +245,12 @@ rainfall_map_sa
 
 #add soil CEC
 soil_CEC <- terra::rast("/Users/semmeijer/Downloads/APCE2024/apce2024gis/Soil/Soil_fertility_CEC_5_15cm.tif")
-soil_CEC_tf <- terra::project(soil_CEC, "EPSG:4326")
+soil_CEC_tf <- terra::project(soil_CEC, crs(studyarea))
 #crop
 soil_CEC_sa <- terra::crop(soil_CEC_tf, studyarea)
 #check extend
+print(terra::ext(soil_CEC))
+print(terra::ext(soil_CEC_tf))
 print(terra::ext(soil_CEC_sa)) ########## incorrect extend
 print(terra::ext(studyarea))
 
