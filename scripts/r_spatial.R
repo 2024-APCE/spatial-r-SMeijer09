@@ -30,7 +30,8 @@ mycolors
 barplot(rep(1,10), col = rev(topo.colors(10))) # rev turns the scale arround barplot(rep(1,10), col = rev(terrain.colors(10))) # rev means reverse the colour palette order library(RColorBrewer)
 RColorBrewer::display.brewer.all()
 barplot(rep(1,10), col = RColorBrewer::brewer.pal(10, "Spectral"))
-barplot(rep(1,10), col = RColorBrewer::brewer.pal(10, "BrBG")) library(viridis)
+barplot(rep(1,10), col = RColorBrewer::brewer.pal(10, "BrBG"))
+library(viridis)
 barplot(rep(1,10), col = viridis::viridis(10))
 barplot(rep(1,10), col = viridis::plasma(10))
 #barplot(rep(1,10), col = viridis::heat(10)) --> heat is not a package from viridis
@@ -428,6 +429,8 @@ pointdata
 sum(is.na(pointdata))
 pointdata <- na.omit(pointdata)
 
+readr::write_csv(pointdata, "pointdata.csv")
+
 # plot how woody cover is predicted by different variables
 # Create a correlation panel plot
 library(psych)
@@ -484,11 +487,3 @@ title(ylab=ylabel)
 # add contours for woody cover
 
 vegan::ordisurf(pca_result, pointdata$woody, add = TRUE, col = "green4")
-
-
-
-
-
-
-
-
