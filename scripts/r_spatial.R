@@ -166,7 +166,7 @@ woody_map_sa<-ggplot() + tidyterra::geom_spatraster(data=woodybiom_sa) +
   tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
   tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
   tidyterra::geom_spatvector(data=rivers, col="blue",linewidth=0.5) +
-  labs(title="Woody biomass in the study area") + 
+  labs(title="Woody biomass") + 
   coord_sf(xlimits,ylimits,expand=F, datum = sf::st_crs(32736)) + 
   theme(axis.text = element_blank(), axis.ticks = element_blank()) + 
   ggspatial::annotation_scale(location="bl",width_hint=0.2) 
@@ -181,7 +181,7 @@ elevation_sa<-terra::crop(elevation_tf,studyarea)
    tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
    tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
    tidyterra::geom_spatvector(data=rivers,col="blue",linewidth=0.5) + 
-   labs(title="Elevation in the study area") +
+   labs(title="Elevation") +
    coord_sf(xlimits,ylimits,expand=F, datum = sf::st_crs(32736)) +
    theme(axis.text = element_blank(), axis.ticks = element_blank()) +
    ggspatial::annotation_scale(location="bl",width_hint=0.2) 
