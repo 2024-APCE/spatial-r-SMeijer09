@@ -15,10 +15,7 @@ psych::pairs.panels(datastd %>% select(dist2river,elevation,CorProtAr,rainfall,c
 
 #Response variables: woody
 #Predictor variables: dist2river, elevation, CorProtAr, rainfall, cec, burnfreq, hills
-#cec is affected by landform/elevation and also by burn frequency
-#rainfall is affected by elevation and landform
-#Burnfreq is largely explained by coreprotected areas maybe also by cec
-#there are relations between dist2river, hills, elevation, but likely to be small effect
+
 
 #Stupid model simple multiple regression
 multreg_std <- lm(woody~dist2river+elevation+CorProtAr+rainfall+cec+burnfreq+hills, datastd)
@@ -45,18 +42,19 @@ woody_fit2 <- lavaan::sem(woody_model2, datastd)
 summary(woody_fit2, standardized=T, fit.measures=T,rsquare=T)
 
 #### add distance to river? add hills as direct?
-woody_model3 <- ('woody~ cec + burnfreq 
+woody_model3 <- ('woody~ cec + burnfreq + dist2river
                  rainfall~elevation
                 burnfreq~ CorProtAr + rainfall + hills
-                cec~burnfreq + rainfall')
+                cec~burnfreq + rainfall
+                 rainfall~~burnfreq')
 woody_fit3 <- lavaan::sem(woody_model3, datastd)
 summary(woody_fit3, standardized=T, fit.measures=T,rsquare=T)
 
 #MODEL 3: SRMR 0.054, RMSEA 0.182, CFI 0.908, TLI 0.817
 
-woody_model4 <- ('woody~ cec + burnfreq + dist2river
+woody_model4 <- ('woody~ cec + burnfreq
                  rainfall~elevation + dist2river
-                burnfreq~ CorProtAr + rainfall + hills + dist2river
+                burnfreq~ CorProtAr + rainfall + dist2river
                 cec~burnfreq + rainfall + elevation + dist2river
                  rainfall~~burnfreq')
 woody_fit4 <- lavaan::sem(woody_model4, datastd)
