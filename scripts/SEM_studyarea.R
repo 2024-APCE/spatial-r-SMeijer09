@@ -3,12 +3,12 @@ library(tidyverse)
 library(lavaan)
 
 data <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRWzT11vBFDWMxmJeYGGsWPgUM7t6Icyt4MeTM4o8VEJw9T8kGpQu-rgF18xF_IvvfxxPlmQzTJgciS/pub?gid=1123931434&single=true&output=csv") |> select(-Points_ID)
-view(data)
+
 datastd <- data |> 
   mutate_all(~(scale(.) %>% as.vector)) |>
   as_tibble()
 datastd
-# note that this doe
+
 
 psych::pairs.panels(data %>% select(dist2river,elevation,CorProtAr,rainfall,cec,burnfreq,hills,woody))
 psych::pairs.panels(datastd %>% select(dist2river,elevation,CorProtAr,rainfall,cec,burnfreq,hills,woody))
@@ -24,7 +24,7 @@ psych::pairs.panels(datastd %>% select(dist2river,elevation,CorProtAr,rainfall,c
 multreg_std <- lm(woody~dist2river+elevation+CorProtAr+rainfall+cec+burnfreq+hills, datastd)
 summary(multreg_std)
 
-#now time for the SEM
+#time for the SEM
 woody_model <- ('woody~dist2river + elevation + CorProtAr + rainfall + cec + burnfreq + hills
                 rainfall~elevation + hills
                 burnfreq~CorProtAr')
@@ -43,3 +43,24 @@ woody_model2 <- ('woody~dist2river + CorProtAr + rainfall + cec + burnfreq + hil
                 cec~burnfreq + rainfall')
 woody_fit2 <- lavaan::sem(woody_model2, datastd)
 summary(woody_fit2, standardized=T, fit.measures=T,rsquare=T)
+
+#### add distance to river? add hills as direct?
+woody_model3 <- ('woody~ cec + burnfreq 
+                 rainfall~elevation
+                burnfreq~ CorProtAr + rainfall + hills
+                cec~burnfreq + rainfall')
+woody_fit3 <- lavaan::sem(woody_model3, datastd)
+summary(woody_fit3, standardized=T, fit.measures=T,rsquare=T)
+
+#MODEL 3: SRMR 0.054, RMSEA 0.182, CFI 0.908, TLI 0.817
+
+woody_model4 <- ('woody~ cec + burnfreq + dist2river
+                 rainfall~elevation + dist2river
+                burnfreq~ CorProtAr + rainfall + hills + dist2river
+                cec~burnfreq + rainfall + elevation + dist2river
+                 rainfall~~burnfreq')
+woody_fit4 <- lavaan::sem(woody_model4, datastd)
+summary(woody_fit4, standardized=T, fit.measures=T,rsquare=T)
+
+
+
