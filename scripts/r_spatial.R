@@ -144,7 +144,7 @@ woody_map + elevation_map + rainfall_map
 all_maps<-woody_map +elevation_map + rainfall_map
 patchwork::plot_layout(ncol=1)
 all_maps 
- ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps.png", width = 18, height = 18, units = "cm",dpi=300)
+# ggsave("/Users/semmeijer/Documents/Ecology&Conservation/Github/spatial-r-SMeijer09/figures/all_maps.png", width = 18, height = 18, units = "cm",dpi=300)
                                                                                                                                                                                                      ############################ ### explore your study area
 # For the study area, I have used a CRS of EPSG:4326, so I will reproject the woodybiom raster to match the studyarea's CRS
 # Reproject woodybiom to match studyarea's CRS (EPSG:4326)
@@ -176,7 +176,7 @@ woody_map_sa
 # make an elevation map for the study area 
 elevation_sa<-terra::crop(elevation_tf,studyarea)
  elevation_map_sa<-ggplot() + tidyterra::geom_spatraster(data=elevation_sa) + 
-   scale_fill_gradientn(colours=terrain.colors(10),limits=c(500,2100), oob=squish, name="meters") +
+   scale_fill_gradientn(colours=terrain.colors(10),limits=c(1400,2600), oob=squish, name="meters") +
    tidyterra::geom_spatvector(data=protected_areas, fill=NA,linewidth=0.5) +
    tidyterra::geom_spatvector(data=studyarea, fill=NA,linewidth=0.5,col="red") +
    tidyterra::geom_spatvector(data=lakes, fill="lightblue",linewidth=0.5) +
